@@ -11,6 +11,6 @@ class IRClassContext:
         main_method: typing.Optional[IRMethod] = self.clazz.get_method_by_name('func_main_0')
         if not main_method:
             print(f'Warning: main method not found for class {self.clazz.name}')
-            return []
+            return
 
         main_method.ctx.collect_lexenv(parent_lexenv=None)
