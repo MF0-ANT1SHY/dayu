@@ -1,6 +1,7 @@
 import typing
 
 from decompile.ir.basicblock import IRBlock
+from decompile.ir.method_ctx import IRMethodContext
 from decompile.ir.nac import NAddressCode
 from pandasm.insn import PandasmInsnArgument
 
@@ -12,6 +13,7 @@ class IRMethod:
         self.parent_class = parent_class
         if self.parent_class:
             self.parent_class.insert_method(self)
+        self.ctx = IRMethodContext(self)
 
     def insert_block(self, block: IRBlock):
         self.blocks.append(block)

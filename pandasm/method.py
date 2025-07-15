@@ -1,6 +1,6 @@
 import typing
 
-from decompile.ir.method_ctx import PandasmMethodContext
+from decompile.ir.method_ctx import IRMethodContext
 from pandasm.insn import PandasmInsn
 
 
@@ -10,4 +10,4 @@ class PandasmMethod:
         self.return_type = method_return_type
         self.args = method_args
         self.insns: typing.List[PandasmInsn] = []
-        self._context = PandasmMethodContext(self)
+        self._context = IRMethodContext(self)

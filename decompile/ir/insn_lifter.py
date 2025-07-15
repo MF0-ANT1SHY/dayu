@@ -326,23 +326,20 @@ class InsnLifter:
 
     @staticmethod
     def ldlexvar(insn: NAddressCode, builder: IRBuilder):
-        # since we have no way of knowing statically what the current level of lexenv is, we'll use
-        # a pseudo-function __get_lexenv__ to represent the action of loading lexenv relative to
-        # the current level of lexenv
-        get_lexenv_arg = PandasmInsnArgument('func', '__get_lexenv__')
-        lexenv_arg = PandasmInsnArgument('lexenv')
-        cur_lexenv_arg = PandasmInsnArgument('cur_lexenv_level', lexenv_arg)
-        builder.create_call(get_lexenv_arg, [cur_lexenv_arg, insn.args[1]], lexenv_arg, label=insn.label)
-        lexvar_arg = PandasmInsnArgument('field', insn.args[2], arg_ref_obj=lexenv_arg)
+        lexenv_relative_level = int(insn.args[1].value, 16)
+        lexvar_idx = int(insn.args[2].value, 16)
+        method_ctx = insn.parent_block.parent_method.ctx
+
+        lexvar_arg = method_ctx.get_lexvar(lexenv_relative_level, lexvar_idx)
         builder.create_assign(lexvar_arg)
 
     @staticmethod
     def stlexvar(insn: NAddressCode, builder: IRBuilder):
-        get_lexenv_arg = PandasmInsnArgument('func', '__get_lexenv__')
-        lexenv_arg = PandasmInsnArgument('lexenv')
-        cur_lexenv_arg = PandasmInsnArgument('cur_lexenv_level', lexenv_arg)
-        builder.create_call(get_lexenv_arg, [cur_lexenv_arg, insn.args[0]], lexenv_arg, label=insn.label)
-        lexvar_arg = PandasmInsnArgument('field', insn.args[1], arg_ref_obj=lexenv_arg)
+        lexenv_relative_level = int(insn.args[0].value, 16)
+        lexvar_idx = int(insn.args[1].value, 16)
+        method_ctx = insn.parent_block.parent_method.ctx
+
+        lexvar_arg = method_ctx.get_lexvar(lexenv_relative_level, lexvar_idx)
         builder.create_assign(PandasmInsnArgument('acc'), lexvar_arg)
 
     @staticmethod
