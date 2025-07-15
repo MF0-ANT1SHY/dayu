@@ -136,7 +136,7 @@ As much as dayu tries to output code that conforms to the syntax of ArkTS/TypeSc
 
 First, since dayu is still limited in its control flow structure recovery, the final pseudocode may be littered with `goto`s (in the form of `jump` statements). ArkTS (as well as TypeScript) doesn't support `goto`, so the user will have to sort some of the control flow out for themselves.
 
-Second, in the final pseudocode, there may be some "pseudo-functions". They stand for operations that can't be easily translated. For example, retrieving [lexical environment](https://gitee.com/openharmony/docs/blob/master/en/application-dev/quick-start/arkts-bytecode-fundamentals.md#lexical-environment-and-lexical-variable) is represented as `__get_lexenv__`.
+Second, in the final pseudocode, there may be some "pseudo-functions". They stand for operations that can't be easily translated. For example, variable definition assertion is represented as `__assert_defined__`.
 
 Some pseudo-functions can be manually implemented. For example, `__assert_defined__` may be implemented as:
 
