@@ -65,10 +65,10 @@ class VariableAllocation(MethodPass):
         elif real_arg.type == 'expr':
             for expr_arg in real_arg.value:
                 self.process_arg(expr_arg)
-        elif real_arg.type.startswith('lexenv'):
-            # add lexenv to reg2var_map so that it can be added to the forward declarations
-            if real_arg.type not in self.reg2var_map:
-                self.reg2var_map[real_arg.type] = real_arg.type
+        elif real_arg.type == 'lexvar':
+            # add lexvar to reg2var_map so that it can be added to the forward declarations
+            if real_arg.value not in self.reg2var_map:
+                self.reg2var_map[real_arg.value] = real_arg.value
 
     def alloc_var(self):
         self.cur_var_no += 1

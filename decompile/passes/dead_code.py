@@ -53,13 +53,14 @@ class DeadCodeElimination(MethodPass):
 
     def analyze_assign(self, insn: NAddressCode, live_vars: set):
         # if the defined variable is not live at this point (i.e. it's not used after being defined),
+        # is not a lexical variable,
         # and if it doesn't involve a reference object (see following example), eliminate it
         # Example:
         #    reg:v0['xxx'] = acc
         # the left-hand side may not be subsequently used in this method, but since it's a reference,
         # the location pointed to by reg:v0 could be accessible outside the method, and therefore
         # reg:v0['xxx'], too, could be used elsewhere outside this method, so optimizing it would be wrong
-        if insn.args[0] not in live_vars and not insn.args[0].ref_obj:
+        if insn.args[0] not in live_vars and insn.args[0].type != 'lexvar' and not insn.args[0].ref_obj:
             # print(f'{insn} is dead code')
             insn.erase_from_parent()
 

@@ -77,7 +77,7 @@ class IRMethodContext:
                     else:
                         lexenv = LexEnv(self.method, parent_lexenv=parent_lexenv)
                     for i in range(int(insn.args[1].value, 16)):
-                        lexenv.add_lexvar(PandasmInsnArgument('var', f'lexvar_{lexenv.lexenv_level}_{i}'))
+                        lexenv.add_lexvar(PandasmInsnArgument('lexvar', f'lexvar_{lexenv.lexenv_level}_{i}'))
                     self.lexenvs.append(lexenv)
                     self.top_level_lexenv = lexenv
                 elif insn.op == 'newlexenvwithname':
@@ -87,7 +87,7 @@ class IRMethodContext:
                         lexenv = LexEnv(self.method, parent_lexenv=parent_lexenv)
                     lexenvwithname_arg = insn.args[1].value
                     for name in self.parse_newlexenvwithname(lexenvwithname_arg):
-                        lexenv.add_lexvar(PandasmInsnArgument('var', name))
+                        lexenv.add_lexvar(PandasmInsnArgument('lexvar', name))
                     self.lexenvs.append(lexenv)
                     self.top_level_lexenv = lexenv
                 elif insn.op in ['definemethod', 'definefunc']:

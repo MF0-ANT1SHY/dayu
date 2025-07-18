@@ -249,17 +249,6 @@ class CopyPropagation(MethodPass):
             # in cases like "acc = acc['xxx']", when var_to_replace == acc, and replace_with == acc['xxx'],
             # replacing results in infinite recursion ("acc['xxx'] = acc['xxx']['xxx'] and so on), so skip it
             return False
-        if var_to_replace.type.startswith('lexenv'):
-            # we don't want to replace newlexenv instructions either, because this could render it dead code
-            # and wrongly eliminated, for example:
-            #    lexenv_xxx = array:yyy
-            #    acc = lexenv_xxx
-            # if replaced this will become:
-            #    lexenv_xxx = array:yyy
-            #    acc = array:yyy
-            # making the first instruction dead, which is suboptimal as the first instruction is actually
-            # a "new" statement (i.e. lexenv_xxx = new array:yyy) and not an ordinary assignment
-            return False
         if var_to_replace.ref_obj:
             # reference object could be accessible outside this method, replacing could render a store to it
             # dead code and wrongly eliminated, see analyze_assign() in DeadCodeElimination for example

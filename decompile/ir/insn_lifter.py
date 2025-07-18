@@ -84,20 +84,8 @@ class InsnLifter:
 
     @staticmethod
     def newlexenv(insn: NAddressCode, builder: IRBuilder):
-        array_arg = PandasmInsnArgument('array', [PandasmInsnArgument('undefined') for _ in range(int(insn.args[1].value, 16))])
-
-        # since we have no way of knowing statically what level this new lexenv is, we'll just append a random number
-        # to its name...
-        lexenv_arg = PandasmInsnArgument(f'lexenv_{insn.__hash__()}')
-        # and use a special variable 'cur_lexenv_level' to keep track of the level in the IR...
-        cur_lexenv_arg = PandasmInsnArgument('cur_lexenv_level', lexenv_arg)
-        builder.create_assign(array_arg, lexenv_arg, label=insn.label)
-        # assign the new lexenv to acc
-        builder.create_assign(lexenv_arg)
-
-        # and finally use a pseudo-function __get_lexenv_level__ to fetch the level and assign it to 'cur_lexenv_level'
-        get_lexenv_level_arg = PandasmInsnArgument('func', '__get_lexenv_level__')
-        builder.create_call(get_lexenv_level_arg, [lexenv_arg], cur_lexenv_arg)
+        # this is basically declaring lexvars; we handle that when collecting lexenvs and allocating variables
+        pass
 
     @staticmethod
     def add2(insn: NAddressCode, builder: IRBuilder):
@@ -433,21 +421,8 @@ class InsnLifter:
 
     @staticmethod
     def newlexenvwithname(insn: NAddressCode, builder: IRBuilder):
-        array_arg = PandasmInsnArgument('litarr',
-                                        insn.args[2])
-
-        # since we have no way of knowing statically what level this new lexenv is, we'll just append a random number
-        # to its name...
-        lexenv_arg = PandasmInsnArgument(f'lexenv_{insn.__hash__()}')
-        # and use a special variable 'cur_lexenv_level' to keep track of the level in the IR...
-        cur_lexenv_arg = PandasmInsnArgument('cur_lexenv_level', lexenv_arg)
-        builder.create_assign(array_arg, lexenv_arg, label=insn.label)
-        # assign the new lexenv to acc
-        builder.create_assign(lexenv_arg)
-
-        # and finally use a pseudo-function __get_lexenv_level__ to fetch the level and assign it to 'cur_lexenv_level'
-        get_lexenv_level_arg = PandasmInsnArgument('func', '__get_lexenv_level__')
-        builder.create_call(get_lexenv_level_arg, [lexenv_arg], cur_lexenv_arg)
+        # this is basically declaring lexvars; we handle that when collecting lexenvs and allocating variables
+        pass
 
     @staticmethod
     def resumegenerator(insn: NAddressCode, builder: IRBuilder):
