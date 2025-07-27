@@ -389,8 +389,8 @@ class InsnLifter:
 
     @staticmethod
     def poplexenv(insn: NAddressCode, builder: IRBuilder):
-        cur_lexenv_arg = PandasmInsnArgument('cur_lexenv_level', '')
-        builder.create_assign_rhs_bop(cur_lexenv_arg, PandasmInsnArgument('imm', '1'), cur_lexenv_arg, '-', label=insn.label)
+        # FIXME: deal with lexenv exiting
+        pass
 
     @staticmethod
     def ldhole(insn: NAddressCode, builder: IRBuilder):
