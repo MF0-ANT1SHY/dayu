@@ -11,6 +11,7 @@ class DeadCodeElimination(MethodPass):
         """
         :param out_l: result from LiveVariableAnalysis
         """
+        super().__init__()
         self.out_l = out_l
 
     def run_on_method(self, method: IRMethod):

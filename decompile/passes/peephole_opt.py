@@ -7,6 +7,7 @@ from decompile.passes.dead_code import DeadCodeElimination
 
 class PeepholeOptimization(MethodPass):
     def __init__(self, out_l, constrained=False):
+        super().__init__()
         self.out_l = out_l
         self.constrained = constrained
 
@@ -48,10 +49,6 @@ class PeepholeOptimization(MethodPass):
                 if insn.type not in [NAddressCodeType.ASSIGN, NAddressCodeType.CALL] or block_insns_copy[idx - 1].type != NAddressCodeType.ASSIGN:
                     self.eliminate_stld_lexvar_pattern(idx, insn, block_insns_copy)
                     continue
-            # make sure the creation of lexenv (in the form "lexenv_xx = a; b = lexenv_xx") doesn't get optimized away
-            # we need the name "lexenv_xx" for better readability
-            # if insn.args[1].type.startswith('lexenv_'):
-            #     continue
             if block_insns_copy[idx - 1] not in block_insns_copy[idx - 1].parent_block.insns:
                 # the previous instruction could have already been eliminated in the last iteration, in which case
                 # if we proceed to the following cases we'll be looking at a non-existent instruction

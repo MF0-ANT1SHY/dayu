@@ -18,6 +18,7 @@ from decompile.passes.live_variable import LiveVariableAnalysis
 from decompile.passes.peephole_opt import PeepholeOptimization
 from decompile.passes.rawir2llir import RawIR2LLIR
 from decompile.passes.reaching_def import ReachingDefinitions
+from decompile.passes.resolve_lexvar import ResolveLexVar
 from decompile.passes.var_alloc import VariableAllocation
 from decompile.passes.viewcfg import ViewCFG
 
@@ -89,11 +90,39 @@ class Decompiler:
         return self.ir_module
 
     def decompile_class(self, clz: IRClass):
+        # The ResolveLexVar class pass requires ALL methods to be at least LLIR to function properly
+        # To ensure that, we split the method decompilation into three parts:
+        #    1. decompile all methods to LLIR
+        #    2. ResolveLexVar
+        #    3. decompile all to higher level IR (depending on the config)
+        # This should ideally be handled in a more elegant way, e.g. by putting passes in a list to be executed in order
         for method in clz.methods:
-            self.decompile_method(method)
+            self.decompile_method_to_llir(method)
+
+        # run class pass ResolveLexVar
+        ResolveLexVar().run_on_class(clz)
+
+        if self.config.output_level is DecompileOutputLevel.RAW_IR or self.config.output_level is DecompileOutputLevel.LOW_LEVEL_IR:
+            return clz
+
+        for method in clz.methods:
+            self.decompile_method_above_llir(method)
+
         return clz
 
     def decompile_method(self, method: IRMethod):
+        self.decompile_method_to_llir(method)
+
+        # run class pass ResolveLexVar
+        ResolveLexVar().run_on_class(method.parent_class)
+
+        if self.config.output_level is DecompileOutputLevel.RAW_IR or self.config.output_level is DecompileOutputLevel.LOW_LEVEL_IR:
+            return method
+
+        self.decompile_method_above_llir(method)
+        return method
+
+    def decompile_method_to_llir(self, method: IRMethod):
         if self.config.output_level is DecompileOutputLevel.RAW_IR:
             return method
 
@@ -103,6 +132,10 @@ class Decompiler:
             if self.config.view_cfg:
                 self.write_cfg_to_file(method, f'cfg/cfg_{method.name}', True)
                 print(f'CFG saved to cfg/cfg_{method.name}.png', end='\n')
+            return method
+
+    def decompile_method_above_llir(self, method: IRMethod):
+        if self.config.output_level is DecompileOutputLevel.RAW_IR or self.config.output_level is DecompileOutputLevel.LOW_LEVEL_IR:
             return method
 
         self.llir_to_mlir(method)

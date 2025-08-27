@@ -1,4 +1,5 @@
 import random
+import traceback
 
 from ordered_set import OrderedSet
 
@@ -30,6 +31,7 @@ class ControlFlowStructuring(MethodPass):
     *Advanced Compiler Design and Implementation* by Steven S. Muchnick
     """
     def __init__(self):
+        super().__init__()
         self.struct_of = {}
         self.struct_type = {}
         self.structures = OrderedSet()
@@ -44,7 +46,12 @@ class ControlFlowStructuring(MethodPass):
 
     def run_on_method(self, method: IRMethod):
         _, self.dominators = self.find_dominators(method)
-        self.structural_analysis(method)
+        try:
+            self.structural_analysis(method)
+        except:
+            print(f'[{self.__class__.__name__}] error: couldn\'t recover control flow for method {method.name}')
+            traceback.print_exc()
+            return
 
     def reaches(self, block_src: IRBlock, block_dst: IRBlock, avoid=None):
         if not avoid:

@@ -15,6 +15,7 @@ from pandasm.reader import PandasmReader
 
 class RawIR2LLIR(Pass):
     def __init__(self):
+        super().__init__()
         self.module = IRModule()
 
     def run_on_method(self, method: IRMethod):
@@ -29,10 +30,9 @@ class RawIR2LLIR(Pass):
                     lifter = mnemonic2lifter_map[insn.op]
                     lifter(insn, builder)
                 else:
-                    # print(f'Unknown instruction: {insn.mnemonic}')
                     nac = NAddressCode(insn.op, insn.args, NAddressCodeType.UNKNOWN, label_name=insn.label)
                     builder.insert(nac)
-                    print(f'[{self.__class__.__name__}] warning: UNKNOWN NAC "{insn.op}" encountered in method {method.name}; analysis may be wrong!')
+                    print(f'[{self.__class__.__name__}] warning: UNKNOWN NAC "{insn.op}" encountered in method {method.name}. Analysis may be wrong!')
 
         # print(f'{method.name}:')
         # for nac in irblock.insns:

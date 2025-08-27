@@ -84,8 +84,11 @@ class InsnLifter:
 
     @staticmethod
     def newlexenv(insn: NAddressCode, builder: IRBuilder):
-        # this is basically declaring lexvars; we handle that when collecting lexenvs and allocating variables
-        pass
+        # this is basically declaring lexvars
+        var_names = []
+        for i in range(int(insn.args[1].value, 16)):
+            var_names.append(PandasmInsnArgument('lexvar', f'lexvar_'))  # will be renamed in ResolveLexVar
+        builder.create_var_decl(var_names, label=insn.label)
 
     @staticmethod
     def add2(insn: NAddressCode, builder: IRBuilder):
@@ -296,38 +299,39 @@ class InsnLifter:
 
     @staticmethod
     def definefunc(insn: NAddressCode, builder: IRBuilder):
-        builder.create_assign(insn.args[2], label=insn.label)
+        target_method_fullname = str(insn.args[2])
+        builder.create_assign(insn.args[2], label=insn.label, extra_info=['definefunc', target_method_fullname])  # store for use in ResolveLexVar
 
     @staticmethod
     def definemethod(insn: NAddressCode, builder: IRBuilder):
         homeobject = PandasmInsnArgument("field", "[HomeObject]", insn.args[2])
-        builder.create_assign(insn.args[0], homeobject, label=insn.label)
+        target_method_fullname = str(insn.args[2])
+        builder.create_assign(insn.args[0], homeobject, label=insn.label, extra_info=['definemethod', target_method_fullname])  # store for use in ResolveLexVar
         builder.create_assign(insn.args[2])
 
     @staticmethod
     def defineclasswithbuffer(insn: NAddressCode, builder: IRBuilder):
         define_class_arg = PandasmInsnArgument('func', '__define_class__')
         class_ctor = insn.args[2]
+        method_string = insn.args[3]
         superclass = insn.args[5]
         comment = f'class methods: {insn.args[3].value}'
-        builder.create_call(define_class_arg, [class_ctor, superclass], label=insn.label, comment=comment)
+        builder.create_call(define_class_arg, [class_ctor, superclass], label=insn.label, comment=comment, extra_info=[method_string])  # store for use in ResolveLexVar
 
     @staticmethod
     def ldlexvar(insn: NAddressCode, builder: IRBuilder):
         lexenv_relative_level = int(insn.args[1].value, 16)
         lexvar_idx = int(insn.args[2].value, 16)
-        method_ctx = insn.parent_block.parent_method.ctx
 
-        lexvar_arg = method_ctx.get_lexvar(lexenv_relative_level, lexvar_idx)
+        lexvar_arg = PandasmInsnArgument('lexvar', f'lexvar_-{lexenv_relative_level}_{lexvar_idx}')
         builder.create_assign(lexvar_arg)
 
     @staticmethod
     def stlexvar(insn: NAddressCode, builder: IRBuilder):
         lexenv_relative_level = int(insn.args[0].value, 16)
         lexvar_idx = int(insn.args[1].value, 16)
-        method_ctx = insn.parent_block.parent_method.ctx
 
-        lexvar_arg = method_ctx.get_lexvar(lexenv_relative_level, lexvar_idx)
+        lexvar_arg = PandasmInsnArgument('lexvar', f'lexvar_-{lexenv_relative_level}_{lexvar_idx}')
         builder.create_assign(PandasmInsnArgument('acc'), lexvar_arg)
 
     @staticmethod
@@ -389,8 +393,8 @@ class InsnLifter:
 
     @staticmethod
     def poplexenv(insn: NAddressCode, builder: IRBuilder):
-        # FIXME: deal with lexenv exiting
-        pass
+        poplexenv_func = PandasmInsnArgument('func', '__poplexenv__')
+        builder.create_call(poplexenv_func, [], label=insn.label)
 
     @staticmethod
     def ldhole(insn: NAddressCode, builder: IRBuilder):
@@ -420,9 +424,55 @@ class InsnLifter:
         builder.create_call(PandasmInsnArgument('func', 'AsyncFunction'), [], label=insn.label)
 
     @staticmethod
+    def parse_newlexenvwithname(lexenvwithname_arg):
+        # newlexenvwithname 0x2, { 5 [ i32:2, string:"4newTarget", i32:0, string:"this", i32:1, ]}
+        lexenvwithname_arg = lexenvwithname_arg.split('[')[1].split(']')[
+            0].strip()  # i32:2, string:"4newTarget", i32:0, string:"this", i32:1,
+
+        # first element is the total number of subsequent name-index pairs, skip this element
+        lexenvwithname_arg = ','.join(
+            lexenvwithname_arg.split(',')[1:])  # string:"4newTarget", i32:0, string:"this", i32:1,
+
+        # `lexenvwithname_arg` is an array of alternating names and indices, keep a variable so we know we're dealing with a name or an index as we go
+        name_or_index = 'name'
+        is_inside_quotes, is_after_comma = False, False
+        cur_str = ''
+        names, indices = [], []
+        for ch in lexenvwithname_arg:
+            if ch == '"':
+                is_inside_quotes = not is_inside_quotes
+            elif ch == ',':
+                if not is_inside_quotes:
+                    if name_or_index == 'name':
+                        name_or_index = 'index'
+                        names.append(cur_str)
+                    elif name_or_index == 'index':
+                        name_or_index = 'name'
+                        indices.append(cur_str)
+                    cur_str = ''
+                    is_after_comma = True
+                else:
+                    cur_str += ch
+            elif ch == ' ':
+                if is_after_comma:
+                    is_after_comma = False
+                else:
+                    cur_str += ch
+            else:
+                cur_str += ch
+
+        # strip the type tag: {"4newTarget":0, "this":1}
+        names = [':'.join(k.split(':')[1:]) for k in names]
+        indices = [':'.join(v.split(':')[1:]) for v in indices]
+
+        return names
+
+    @staticmethod
     def newlexenvwithname(insn: NAddressCode, builder: IRBuilder):
-        # this is basically declaring lexvars; we handle that when collecting lexenvs and allocating variables
-        pass
+        # this is basically declaring lexvars
+        lexenvwithname_arg = insn.args[2].value
+        var_names = InsnLifter.parse_newlexenvwithname(lexenvwithname_arg)
+        builder.create_var_decl(var_names, label=insn.label)
 
     @staticmethod
     def resumegenerator(insn: NAddressCode, builder: IRBuilder):

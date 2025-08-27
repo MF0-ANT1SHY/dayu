@@ -6,6 +6,7 @@ from decompile.method_pass import MethodPass
 
 class ViewCFG(MethodPass):
     def __init__(self, output_path, view):
+        super().__init__()
         self.output_path = output_path
         self.view = view
 

@@ -13,5 +13,11 @@ class LexEnv:
 
     def get_lexvar(self, i):
         if i > len(self.lexvars):
-            raise IndexError(f'{self.__class__.__name__}: Lexvar index {i} out of bounds')
+            raise IndexError(f'{self.__class__.__name__}: LexVar index {i} out of bounds')
         return self.lexvars[i]
+
+
+class LexVar:
+    def __init__(self, lexenv_level, lexvar_name):
+        self.lexenv_level = lexenv_level
+        self.lexvar_name = lexvar_name

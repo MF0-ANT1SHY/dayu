@@ -7,6 +7,7 @@ from decompile.method_pass import MethodPass
 
 class PrintPcode(MethodPass):
     def __init__(self):
+        super().__init__()
         self.vis = set()
 
     def run_on_method(self, method: IRMethod):

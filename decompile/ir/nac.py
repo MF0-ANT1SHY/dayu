@@ -14,9 +14,10 @@ class NAddressCodeType(IntEnum):
         (8) throw x
         (9) if x rop y throw y
         (10) import x as y from z
+        (11) let x
     (1)-(3) are ASSIGN type, (4), UNCOND_JUMP type, (5), COND_JUMP type, (6), CALL type, (7), RETURN type,
-    (8), UNCOND_THROW type, (9), COND_THROW type, and (10), IMPORT type; anything else (e.g., raw IR instructions)
-    is UNKNOWN type.
+    (8), UNCOND_THROW type, (9), COND_THROW type, (10), IMPORT type, and (11), VAR_DECL type;
+    anything else (e.g., raw IR instructions) is UNKNOWN type.
     """
     ASSIGN = auto()
     UNCOND_JUMP = auto()
@@ -26,6 +27,7 @@ class NAddressCodeType(IntEnum):
     UNCOND_THROW = auto()
     COND_THROW = auto()
     IMPORT = auto()
+    VAR_DECL = auto()
     UNKNOWN = auto()
 
 class NAddressCode:
@@ -42,7 +44,7 @@ class NAddressCode:
         'instanceof': ''
     }
 
-    def __init__(self, op, args=None, nac_type=NAddressCodeType.ASSIGN, parent_block=None, label_name='', comment=''):
+    def __init__(self, op, args=None, nac_type=NAddressCodeType.ASSIGN, parent_block=None, label_name='', comment='', extra_info=None):
         """
         :param op: operation on the right-hand side of ASSIGNs or in the condition of COND_JUMPs
         :param args: list of argument(s), specifically:
@@ -59,6 +61,7 @@ class NAddressCode:
         self.type = nac_type
         self.label = label_name
         self.comment = comment
+        self.extra_info = extra_info
         self.parent_block = parent_block
         if self.parent_block:
             self.parent_block.insert_insn(self)
@@ -99,6 +102,8 @@ class NAddressCode:
                 return self.format_nac_str_with_label(f'if ({self.args[0]} {self.op} {self.args[1]}) throw {self.args[2]}')
         elif self.type == NAddressCodeType.IMPORT:
             return self.format_nac_str_with_label('import { ' + f'{self.args[0]}' + ' } as ' + f"{self.args[1]} from '{self.args[2]}';")
+        elif self.type == NAddressCodeType.VAR_DECL:
+            return self.format_nac_str_with_label(f'let {", ".join([str(arg) for arg in self.args])}')
         elif self.type == NAddressCodeType.UNKNOWN:
             return self.format_nac_str_with_label(f'{self.op} {", ".join([str(arg) for arg in self.args])}')
 

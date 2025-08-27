@@ -31,9 +31,6 @@ class Pandasm2RawIR:
         for pa_method in pa_class.methods:
             cls.transform_method(pa_method, ir_class)
 
-        # collect lexenvs for use in decompiling "ldlexvar" instructions
-        ir_class.ctx.collect_lexenvs()
-
         return ir_class
 
     @classmethod

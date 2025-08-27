@@ -1,5 +1,4 @@
 import typing
-from enum import IntEnum, auto
 
 from decompile.ir.basicblock import IRBlock
 from decompile.ir.nac import NAddressCode, NAddressCodeType
@@ -27,10 +26,10 @@ class IRBuilder:
         self.insert_point[0].insert_insn(insn, self.insert_point[1])
         self.increment_insert_point()
 
-    def create_assign(self, src: PandasmInsnArgument, dst: typing.Union[PandasmInsnArgument, None] = None, label=''):
+    def create_assign(self, src: PandasmInsnArgument, dst: typing.Union[PandasmInsnArgument, None] = None, label='', extra_info=None):
         if not dst:
             dst = PandasmInsnArgument('acc')
-        insn = NAddressCode('', [dst, src], label_name=label)
+        insn = NAddressCode('', [dst, src], label_name=label, extra_info=extra_info)
         self.insert(insn)
 
     def create_assign_rhs_uop(self, src: PandasmInsnArgument, dst: typing.Union[PandasmInsnArgument, None] = None, rhs_op='', label=''):
@@ -70,10 +69,10 @@ class IRBuilder:
         self.insert(insn)
 
     def create_call(self, func: PandasmInsnArgument, args: typing.List[PandasmInsnArgument],
-                    dst: typing.Union[PandasmInsnArgument, None] = None, label='', comment=''):
+                    dst: typing.Union[PandasmInsnArgument, None] = None, label='', comment='', extra_info=None):
         if not dst:
             dst = PandasmInsnArgument('acc')
-        insn = NAddressCode('', [dst, func, *args], NAddressCodeType.CALL, label_name=label, comment=comment)
+        insn = NAddressCode('', [dst, func, *args], NAddressCodeType.CALL, label_name=label, comment=comment, extra_info=extra_info)
         self.insert(insn)
 
     def create_return(self, retval: typing.Union[PandasmInsnArgument, None] = None, label=''):
@@ -112,4 +111,8 @@ class IRBuilder:
 
     def create_import(self, imported_var, local_name, import_from_module, label=''):
         insn = NAddressCode('', [imported_var, local_name, import_from_module], NAddressCodeType.IMPORT, label_name=label)
+        self.insert(insn)
+
+    def create_var_decl(self, var_names, label='', extra_info=None):
+        insn = NAddressCode('', var_names, NAddressCodeType.VAR_DECL, label_name=label, extra_info=extra_info)
         self.insert(insn)

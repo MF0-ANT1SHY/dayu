@@ -6,6 +6,7 @@ from decompile.method_pass import MethodPass
 
 class VariableAllocation(MethodPass):
     def __init__(self, rename_func_args):
+        super().__init__()
         self.cur_var_no = -1
         self.reg2var_map = {}
         self.rename_func_args = rename_func_args
@@ -21,7 +22,7 @@ class VariableAllocation(MethodPass):
             self.run_on_insn(insn)
 
     def run_on_insn(self, insn: NAddressCode):
-        if insn.type == NAddressCodeType.UNKNOWN:
+        if insn.type in [NAddressCodeType.VAR_DECL, NAddressCodeType.UNKNOWN]:
             return
         for arg in insn.args:
             real_arg = arg
@@ -65,10 +66,6 @@ class VariableAllocation(MethodPass):
         elif real_arg.type == 'expr':
             for expr_arg in real_arg.value:
                 self.process_arg(expr_arg)
-        elif real_arg.type == 'lexvar':
-            # add lexvar to reg2var_map so that it can be added to the forward declarations
-            if real_arg.value not in self.reg2var_map:
-                self.reg2var_map[real_arg.value] = real_arg.value
 
     def alloc_var(self):
         self.cur_var_no += 1

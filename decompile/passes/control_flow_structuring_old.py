@@ -16,6 +16,7 @@ class ControlFlowStructuringOld(MethodPass):
     we're going to produce the final pseudocode so IR constraints and CFG don't matter anymore
     """
     def __init__(self, recover_structures=True):
+        super().__init__()
         self.dominators = {}
         self.vis = set()
         self.follow_nodes: typing.Dict[IRBlock, IRBlock] = {}
