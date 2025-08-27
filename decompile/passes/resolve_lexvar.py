@@ -1,3 +1,4 @@
+import traceback
 import typing
 from collections import defaultdict
 
@@ -29,7 +30,11 @@ class ResolveLexVar(ClassPass):
             print(f'[{self.__class__.__name__}] warning: main method not found for class {clazz.name}')
             return
 
-        self.run_on_method(main_method)
+        try:
+            self.run_on_method(main_method)
+        except:
+            print(f'[{self.__class__.__name__}] error: couldn\'t resolve LexVar for class {clazz.name}')
+            traceback.print_exc()
 
     def run_on_method(self, method: IRMethod):
         self.do_run_on_method(method, None)
