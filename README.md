@@ -153,7 +153,7 @@ function __assert_defined__(obj) {
 
 ## Known Issues
 - Limited coverage of the instruction set
-- Loop structures and conditional structures are not recovered in some cases
+- Loops and conditionals are not recovered in some cases
 - No support for `try-catch` structures
 - Lack of type analysis (both ArkTS and TypeScript are typed)
 - Performance has now been boosted! <s>Slow. Very slow. Largely caused by two things: Panda Assembly parsing and copy propagation, both of which are badly written.</s>
