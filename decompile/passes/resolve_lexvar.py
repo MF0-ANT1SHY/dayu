@@ -26,7 +26,7 @@ class ResolveLexVar(ClassPass):
     def run_on_class(self, clazz: IRClass):
         main_method: typing.Optional[IRMethod] = clazz.get_method_by_name('func_main_0')
         if not main_method:
-            print(f'Warning: main method not found for class {clazz.name}')
+            print(f'[{self.__class__.__name__}] warning: main method not found for class {clazz.name}')
             return
 
         self.run_on_method(main_method)
