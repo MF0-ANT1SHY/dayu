@@ -102,20 +102,20 @@ python main.py -pa modules.12.abc.txt -pmc com.example.myapplication.entry.ets.p
 python main.py -abc modules.12.abc -pa modules.12.abc.txt -dme com.example.myapplication.entry.ets.pages.Index.foo
 ```
 
-以默认配置反编译后，结果如下：
+以默认配置反编译后，结果如下（为提高可读性手动缩进过）：
 
 ```typescript
-let v0, v1, v2 
+let v0, v1, v2
 v0 = 0x0
 jump_label_1:
-while (v0 < 0x5) { 
-import { default } as hilog from '@ohos:hilog';
-v1 = __is_hole__(hilog)
-if (v1 == true) throw 'Value of "hilog" is undefined'
-v2 = hilog.info(hilog, 0x0, "hello", (("world" + v0) + ""))
-v2 = __ToNumeric__(v0)
-v0 = (v2 + 0x1)
-} 
+while (v0 < 0x5) {
+    import { default } as hilog from '@ohos:hilog';
+    v1 = __is_hole__(hilog)
+    if (v1 == true) throw 'Value of "hilog" is undefined'
+    v2 = hilog.info(hilog, 0x0, "hello", (("world" + v0) + ""))
+    v2 = __ToNumeric__(v0)
+    v0 = (v2 + 0x1)
+}
 jump_label_0:
 v2 = v0
 return v2
