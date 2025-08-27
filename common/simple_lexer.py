@@ -48,21 +48,22 @@ class SimpleLexer(Lexer):
         return self.next_token() == token
 
     def read_until_token(self, token):
-        read_content = ''
+        read_content = []
         next_token = self.next_token()
-        read_content += next_token
+        read_content.append(next_token)
         while next_token != token:
-            read_content += ' '
+            read_content.append(' ')
             next_token = self.next_token()
-            read_content += next_token
-        return read_content
+            read_content.append(next_token)
+        return ''.join(read_content)
 
     def read_until_next_line(self, strip=True):
-        read_content = ''
+        read_content = []
         next_token = self.next_token()
-        read_content += next_token
+        read_content.append(next_token)
         while not next_token.endswith('\n'):
-            read_content += ' '
+            read_content.append(' ')
             next_token = self.next_token()
-            read_content += next_token
+            read_content.append(next_token)
+        read_content = ''.join(read_content)
         return read_content.strip() if strip else read_content
