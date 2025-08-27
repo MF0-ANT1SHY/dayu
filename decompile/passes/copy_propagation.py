@@ -14,6 +14,7 @@ from pandasm.insn import PandasmInsnArgument
 
 class CopyPropagation(MethodPass):
     def __init__(self, in_r, constrained=False):
+        super().__init__()
         self.in_r = in_r
         self.constrained = constrained
 
@@ -171,50 +172,94 @@ class CopyPropagation(MethodPass):
         return len(block.successors) == 0
 
     def replace_copies(self, copies, in_c, in_r):
-        # TODO: revamp this suuuuuuuuper slow method by optimizing away the repeated instruction-level
-        #  copy propagation
-        for copy_ in copies:
-            replaced_once = False
-            are_all_uses_replaced = True
-            for block, copies_reaching_block in in_c.items():
-                if len(copy_.args) >= 3 and self.constrained:
+        # Single-pass, block-level replacement to avoid repeated collect/analyze per copy+insn
+        # Track per-copy state across the whole method
+        replaced_once_map = {c: False for c in copies}
+        all_uses_replaced_map = {c: True for c in copies}
+
+        # helper to determine whether a definition insn kills a copy
+        def def_kills_copy(def_insn, copy_):
+            try:
+                if len(copy_.args) == 2:
+                    copy_args = {copy_.args[0], copy_.args[1]}
+                    if def_insn.args[0] in copy_args:
+                        return True
+                    if copy_.args[1].ref_obj and def_insn.args[0] == copy_.args[1].ref_obj:
+                        return True
+                elif len(copy_.args) >= 3:
+                    copy_args = {*copy_.args}
+                    if def_insn.args[0] in copy_args:
+                        return True
+                # nested ExprArg usage
+                vars_used_in_copy = set()
+                for arg in copy_.args[1:]:
+                    if isinstance(arg, ExprArg):
+                        vars_used_in_copy.update(arg.get_used_args())
+                if def_insn.args[0] in vars_used_in_copy:
+                    return True
+            except Exception:
+                return False
+            return False
+
+        # iterate over blocks and do a forward single-pass
+        for block, copies_reaching_block in in_c.items():
+            # current set of copies available at the current program point
+            current_copies = copies_reaching_block.copy()
+            # per-block definition/gen tracking to maintain kills for this block
+            def_block = OrderedSet()
+            gen_block = OrderedSet()
+
+            for insn in block.insns:
+                # compute vars used in this insn
+                vars_use = set()
+                if insn.type in [NAddressCodeType.ASSIGN, NAddressCodeType.CALL]:
+                    vars_use = self.analyze_assign_for_replace(insn)
+                elif insn.type in [NAddressCodeType.COND_JUMP, NAddressCodeType.COND_THROW]:
+                    vars_use = self.analyze_cond_jump_throw_for_replace(insn)
+
+                # try replacing uses using current_copies
+                for copy_ in list(current_copies):
                     # in constrained mode, only replace copies of the form x=y (one argument on the rhs) for simplicity
-                    continue
-                if copy_.type == NAddressCodeType.CALL:
+                    if len(copy_.args) >= 3 and self.constrained:
+                        continue
                     # don't replace if the copy is a function call, because this can lead to multiple calls of the
                     # same function, which changes the original semantics
-                    continue
-
-                for insn in block.insns:
-                    vars_use = set()
-                    if insn.type in [NAddressCodeType.ASSIGN, NAddressCodeType.CALL]:
-                        vars_use = self.analyze_assign_for_replace(insn)
-                    elif insn.type in [NAddressCodeType.COND_JUMP, NAddressCodeType.COND_THROW]:
-                        vars_use = self.analyze_cond_jump_throw_for_replace(insn)
+                    if copy_.type == NAddressCodeType.CALL:
+                        continue
                     if copy_.args[0] in vars_use:
-                        # TODO: these two statements are repeated for each copy and for each instruction in the block,
-                        #  which is extremely time-consuming
-                        copies_until_this_insn = self.collect_copies(block.parent_method, stop_on_insn=insn)
-                        gen, kill = self.analyze_gen_kill(block, copies_until_this_insn, stop_on_insn=insn)
-                        if copy_ in copies_reaching_block.difference(kill).union(gen):
-                            # we have to make sure all uses of this copy can be replaced before we can remove the copy;
-                            # if any single replacement can't be done, it would be wrong to remove, e.g.,
-                            #    (1) v2 = a2
-                            #    (2) acc = v2 + 'def'
-                            #    (3) v3 = v2 + 'nnn'
-                            # if the v2 in (2) can't be replaced by a2, but the v2 in (3) can, we can't remove (1),
-                            # because that would leave v2 in (2) undefined
+                        # if copy is currently reaching this insn, attempt replacement
+                        if copy_ in current_copies:
                             if self.replace_var_use(insn, copy_):
-                                replaced_once = True
+                                replaced_once_map[copy_] = True
                             else:
-                                are_all_uses_replaced = False
-                        else:  # definition reaches this use, don't remove
-                            gen, kill = ReachingDefinitions.analyze_gen_kill(block, copies_until_this_insn, stop_on_insn=insn)
-                            if copy_ in in_r[block].difference(kill).union(gen):
-                                are_all_uses_replaced = False
-            # if all uses reached by this copy can be replaced, we can safely do the replacement
-            # and remove the copy instruction
-            if replaced_once and are_all_uses_replaced:
+                                all_uses_replaced_map[copy_] = False
+                        else:
+                            # conservative fallback: if it's not in current_copies but reaches block overall, mark not replaceable
+                            if copy_ in in_r.get(block, OrderedSet()):
+                                all_uses_replaced_map[copy_] = False
+
+                # now update def/gen info with this insn (if it's a defining insn)
+                if insn.type in [NAddressCodeType.ASSIGN, NAddressCodeType.CALL]:
+                    # treat this insn as a new definition; update def_block/gen_block
+                    self.analyze_assign(insn, def_block, gen_block)
+
+                    # applying kill logic: a new definition may kill copies in current_copies
+                    for copy_ in list(current_copies):
+                        if def_kills_copy(insn, copy_):
+                            try:
+                                current_copies.remove(copy_)
+                            except KeyError:
+                                pass
+
+                    # if this insn itself is a copy, add to current_copies (so later insns can see it)
+                    if len(insn.args) >= 2:
+                        current_copies.add(insn)
+
+            # end of block
+
+        # after scanning all blocks, remove copies that were replaced everywhere and at least once
+        for copy_ in list(copies):
+            if replaced_once_map.get(copy_, False) and all_uses_replaced_map.get(copy_, True):
                 copy_.erase_from_parent()
 
     def analyze_assign_for_replace(self, insn: NAddressCode):

@@ -14,14 +14,19 @@ class SimpleLexer(Lexer):
         self.token_iterator = self.iter_token()
 
     def iter_line(self, line_iter):
-        tok = ''
+        token_chars = []
+
         for ch in line_iter:
-            if ch.strip(' ').strip('\t'):
-                tok += ch
-            elif tok:
-                yield tok
-                tok = ''
-        yield tok
+            if ch not in ' \t':
+                token_chars.append(ch)
+            elif token_chars:  # End of token
+                yield ''.join(token_chars)
+                token_chars = []
+
+        if token_chars:
+            yield ''.join(token_chars)
+        else:
+            yield ''
 
     def iter_token(self):
         while self.cur_line < len(self.lines):
