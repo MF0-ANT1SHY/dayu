@@ -79,6 +79,8 @@ def init_db(conn):
             total_opaque_predicates INTEGER,
             methods_with_opaque INTEGER,
             ratio_opaque REAL,
+            methods_with_external INTEGER,
+            ratio_external REAL,
             FOREIGN KEY(run_id) REFERENCES runs(run_id)
         )
         """,
@@ -144,7 +146,7 @@ def count_opaque_predicates_in_method(method):
         for i, insn in enumerate(insns):
             op = getattr(insn, 'op', None)
             if op and op.lower() == "jmp":
-                if i + 1 < len(insns) and not getattr(insns[i+1], 'label', None):  # 后面还有指令且不带跳转标签 => 顺序执行 => 死代码
+                if i + 1 < len(insns) and not getattr(insns[i+1], 'label', None):
                     cnt += 1
     return cnt
 
@@ -176,6 +178,7 @@ def main():
         total_external_module_loads = 0
         total_opaque_predicates = methods_with_opaque = 0
         global_external_module_dep_calls = {}
+        methods_with_external = 0
 
         for clz in module.classes:
             for m in clz.methods:
@@ -199,6 +202,8 @@ def main():
                     methods_with_throw += 1
                 if opaque_cnt > 0:
                     methods_with_opaque += 1
+                if method_dep_calls:
+                    methods_with_external += 1
 
                 for dep_name, call_count in method_dep_calls.items():
                     global_external_module_dep_calls[dep_name] = global_external_module_dep_calls.get(dep_name, 0) + call_count
@@ -220,14 +225,16 @@ def main():
         ratio_throw = (methods_with_throw / total_methods) if total_methods else 0.0
         ratio_opaque = (methods_with_opaque / total_methods) if total_methods else 0.0
         total_external_module_deps = len(global_external_module_dep_calls)
+        ratio_external = (methods_with_external / total_methods) if total_methods else 0.0
 
         cur.execute(
-            "INSERT INTO summary_metrics (run_id, total_ins, total_indirect_calls, methods_with_indirect, total_throws, methods_with_throw, total_methods, ratio_indirect, ratio_throw, total_external_module_loads, total_external_module_deps, total_opaque_predicates, methods_with_opaque, ratio_opaque) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO summary_metrics (run_id, total_ins, total_indirect_calls, methods_with_indirect, total_throws, methods_with_throw, total_methods, ratio_indirect, ratio_throw, total_external_module_loads, total_external_module_deps, total_opaque_predicates, methods_with_opaque, ratio_opaque, methods_with_external, ratio_external) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (run_id, total_ins, total_indirect_calls, methods_with_indirect,
              total_throws, methods_with_throw, total_methods,
              ratio_indirect, ratio_throw, total_external_module_loads, total_external_module_deps,
-             total_opaque_predicates, methods_with_opaque, ratio_opaque)
+             total_opaque_predicates, methods_with_opaque, ratio_opaque,
+             methods_with_external, ratio_external)
         )
         conn.commit()
 
@@ -245,6 +252,7 @@ def main():
     print(f'Total external module loads (ldexternalmodulevar): {total_external_module_loads}')
     print(f'Total external module deps (unique names): {total_external_module_deps}')
     print(f'Total external dependency calls: {total_external_dependency_calls}')
+    print(f'Methods with external deps: {methods_with_external}/{total_methods} ({ratio_external:.2%})')
     print(f'Total opaque predicates: {total_opaque_predicates}')
     print(f'Methods with opaque predicates: {methods_with_opaque}/{total_methods} ({ratio_opaque:.2%})')
 
