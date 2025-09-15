@@ -4,7 +4,7 @@ import os
 full_command = """
 rm -rf ./.conda && \
 conda create -p ./.conda python=3.10.18 -y && \
-conda run -p ./.conda pip install -r ./requirements.txt
+conda run -p ./.conda python setup.py install
 """
 
 os.system(full_command)

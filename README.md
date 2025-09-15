@@ -39,10 +39,10 @@ options:
 Example:
 
 ```python
-from ark.abcreader import AbcReader
-from decompile.config import DecompilerConfig, DecompileGranularity, DecompileOutputLevel
-from decompile.decompiler import Decompiler
-from pandasm.reader import PandasmReader
+from dayu.ark.abcreader import AbcReader
+from dayu.decompile.config import DecompilerConfig, DecompileGranularity, DecompileOutputLevel
+from dayu.decompile.decompiler import Decompiler
+from dayu.pandasm.reader import PandasmReader
 
 # specify input files, Panda Assembly file (obtained by using ark_disasm tool from the SDK) is required for decompilation
 abcfile = AbcReader.from_file('<path to abc file>')

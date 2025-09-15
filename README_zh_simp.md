@@ -39,10 +39,10 @@ options:
 示例：
 
 ```python
-from ark.abcreader import AbcReader
-from decompile.config import DecompilerConfig, DecompileGranularity, DecompileOutputLevel
-from decompile.decompiler import Decompiler
-from pandasm.reader import PandasmReader
+from dayu.ark.abcreader import AbcReader
+from dayu.decompile.config import DecompilerConfig, DecompileGranularity, DecompileOutputLevel
+from dayu.decompile.decompiler import Decompiler
+from dayu.pandasm.reader import PandasmReader
 
 # 指定输入文件，文本形式的方舟字节码（Panda Assembly，可通过 SDK 中的 ark_disasm 反汇编 abc 得到）为反编译所必需的输入
 abcfile = AbcReader.from_file('<abc 文件路径>')

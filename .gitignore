@@ -3,3 +3,8 @@
 cfg
 .conda
 haps
+build
+__pycache__
+*.egg-info
+*.db
+dist
